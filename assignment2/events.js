@@ -5,6 +5,8 @@ emitter.on("time", (message) => {
   console.log("Time received:", message);
 });
 
-setInterval(() => emitter.emit("time", new Date().toLocaleTimeString()), 5000);
+setInterval(() => {
+ const currentTime= new Date().toLocaleTimeString()
+  emitter.emit("time",currentTime)} , 5000);
 
-module.exports = { emitter };
+module.exports = emitter ;
