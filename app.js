@@ -3,9 +3,17 @@ const errorHandler = require("./middleware/error-handler");
 const notFoundErrorHandler=require('./middleware/not-found.js');
 const app = express();
 
+app.use((req,res,next)=>{
+   console.log(req.method, req.path, req.query)
+   next()
+})
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
+
+app.post("/testpost",(req,res) =>{
+res.send("You successful add the data");
+})
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);
