@@ -3,13 +3,6 @@ const app = express();
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const dogsRouter = require("./routes/dogs");
-const {
-  ValidationError,
-  NotFoundError,
-  UnauthorizedError,
-} = require("./errors");
-
-const { StatusCodes } = require("http-status-codes");
 
 // Your middleware here
 
@@ -25,6 +18,13 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  next();
+});
+
 app.use(express.json({ limit: "1mb" }));
 
 app.use((req, res, next) => {
@@ -32,36 +32,35 @@ app.use((req, res, next) => {
     req.method === "POST" &&
     !req.headers["content-type"].includes("application/json")
   ) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({
-        error: "Content-Type must be application/json",
-        requestId: req.requestId,
-      });
+    return res.status(400).json({
+      error: "Content-Type must be application/json",
+      requestId: req.requestId,
+    });
   }
   next();
 });
 
 app.use("/", dogsRouter); // Do not remove this line
 
+app.use("/images/", express.static(path.join(__dirname, "public/images")));
+
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  
+
   if (statusCode >= 400 && statusCode < 500) {
-    console.warn(`WARN: ${err.name}`, err.message);
+    console.warn(`WARN: ${err.name} ${err.message}`);
   } else {
-    console.error(`ERROR: Error`, err.message);
+    console.error(`ERROR: Error`);
   }
-  
+
   res.status(statusCode).json({
-    error: err.message || 'Internal Server Error',
-    requestId: req.requestId
+    error: err.message || "Internal Server Error",
+    requestId: req.requestId,
   });
 });
 
-
 app.use((req, res) => {
-  return res.status(StatusCodes.NOT_FOUND).json({
+  return res.status(404).json({
     error: "Route not found",
     requestId: req.requestId,
   });
