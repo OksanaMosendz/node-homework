@@ -1,19 +1,30 @@
 const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const notFoundErrorHandler=require('./middleware/not-found.js');
+const userRouter = require("./routes/userRoutes");
+
 const app = express();
+
+global.user_id = null;
+global.users = [];
+global.tasks = [];
+
+app.use(express.json({ limit: "1kb" }));
 
 app.use((req,res,next)=>{
    console.log(req.method, req.path, req.query)
    next()
 })
 app.get("/", (req, res) => {
-  res.send("Hello, World!");
+  res.json({message: "Hello, World!"});
 });
 
 app.post("/testpost",(req,res) =>{
-res.send("You successful add the data");
+res.json({message: "You successful add the data"});
 })
+
+
+app.use("/api/users", userRouter);
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);
@@ -35,6 +46,7 @@ server.on('error', (err) => {
 });
 
 let isShuttingDown = false;
+
 async function shutdown(code = 0) {
   if (isShuttingDown) return;
   isShuttingDown = true;
