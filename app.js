@@ -2,6 +2,8 @@ const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const notFoundErrorHandler=require('./middleware/not-found.js');
 const userRouter = require("./routes/userRoutes");
+const taskRouter= require("./routes/taskRouter.js");
+const authMiddleware = require('./middleware/auth');
 
 const app = express();
 
@@ -15,6 +17,7 @@ app.use((req,res,next)=>{
    console.log(req.method, req.path, req.query)
    next()
 })
+
 app.get("/", (req, res) => {
   res.json({message: "Hello, World!"});
 });
@@ -23,18 +26,17 @@ app.post("/testpost",(req,res) =>{
 res.json({message: "You successful add the data"});
 })
 
-
 app.use("/api/users", userRouter);
+
+app.use("api/tasks", authMiddleware, taskRouter);
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);
-
 
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () =>
       console.log(`Server is listening on port ${port}...`),
     );
-
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
@@ -70,8 +72,10 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught exception:', err);
   shutdown(1);
 });
+
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
   shutdown(1);
 });    
+
 module.exports = { app, server} ;
