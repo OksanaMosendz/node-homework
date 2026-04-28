@@ -1,5 +1,6 @@
 const { StatusCodes } = require("http-status-codes");
 const {taskSchema,  patchTaskSchema}=require('../validation/taskSchema');
+
 const taskCounter = (() => {
   let lastTaskNumber = 0;
   return () => {
@@ -14,7 +15,7 @@ if(!req.body)req.body={};
 
 const {error, value} = taskSchema.validate(req.body, {abortEarly: false});
 if(error){
-res
+return res
 .status(StatusCodes.BAD_REQUEST)
 .json({error: `${error.message}`})
 }
@@ -42,7 +43,11 @@ return res.json(task);
 }
 
 const index=(req, res)=>{
+
   const userTasks = global.tasks.filter((task) => task.userId === global.user_id.email);
+  if(userTasks.length===0){
+    return res.status(StatusCodes.NOT_FOUND).json({message: "No tasks found"})
+  }
   const sanitizedTasks = userTasks.map((task) => {
   const { userId, ...sanitizedTask} = task;
   return sanitizedTask;
@@ -59,6 +64,7 @@ const taskToFind = parseInt(req.params?.id);
 if (!taskToFind) {
   return res.status(400).json({message: "The task ID passed is not valid."})
 }
+
 const taskIndex = global.tasks.findIndex((task) => task.id === taskToFind && task.userId === global.user_id.email);
 
 if (taskIndex === -1) {
@@ -74,7 +80,7 @@ const update=(req, res)=>{
 const {error, value} = patchTaskSchema.validate(req.body, {abortEarly: false});
 
 if(error){
-res
+return res
 .status(StatusCodes.BAD_REQUEST)
 .json({error: `${error.message}`})
 }

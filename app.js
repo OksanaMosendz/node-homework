@@ -28,7 +28,7 @@ res.json({message: "You successful add the data"});
 
 app.use("/api/users", userRouter);
 
-app.use("api/tasks", authMiddleware, taskRouter);
+app.use("/api/tasks", authMiddleware, taskRouter);
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);

@@ -1,9 +1,10 @@
-const authMiddleware = (req, res, next)=>{
+
 const { StatusCodes } = require("http-status-codes");
+const authMiddleware = (req, res, next)=>{
 
-if (global.user.id===null) {
+if (global.user_id===null) {
 
-res
+return res
 .status(StatusCodes.UNAUTHORIZED)
 .json({'message': "unauthorized"})
 }
@@ -12,4 +13,4 @@ next();
 
 }
 
-exports.module=authMiddleware;
+module.exports=authMiddleware;
