@@ -23,7 +23,6 @@ async function register(req, res, next) {
   
   const { error, value } = userSchema.validate(req.body, { abortEarly: false });
   
-
   if (error){
     return res
       .status(StatusCodes.BAD_REQUEST)
@@ -70,7 +69,7 @@ async function logon(req, res) {
   }
 
   const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-    req.body.email,
+    req.body.email.trim().toLowerCase(),
   ]);
 
 if(result.rows.length===0){
@@ -95,7 +94,7 @@ if(result.rows.length===0){
 
 function logoff(req, res) {
   global.user_id = null;
-  res.sendStatus(200);
+  res.sendStatus(StatusCodes.OK);
 }
 
 module.exports = { register, logon, logoff };
