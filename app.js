@@ -8,8 +8,8 @@ const pool=require('./db/pg-pool.js');
 const app = express();
 
 global.user_id = null;
-global.users = [];
-global.tasks = [];
+// global.users = [];
+// global.tasks = [];
 
 
 app.use(express.json({ limit: "1kb" }));
