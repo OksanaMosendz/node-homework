@@ -4,36 +4,25 @@ const notFoundErrorHandler=require('./middleware/not-found.js');
 const userRouter = require("./routes/userRoutes");
 const taskRouter= require("./routes/taskRouter.js");
 const authMiddleware = require('./middleware/auth');
-const pool=require('./db/pg-pool.js');
+const prisma = require("./db/prisma");
 const app = express();
 
 global.user_id = null;
-// global.users = [];
-// global.tasks = [];
-
 
 app.use(express.json({ limit: "1kb" }));
 
-app.get("/health", async (req, res) => {
+app.get('/health', async (req, res) => {
   try {
-    await pool.query("SELECT 1");
-    res.json({ status: "ok", db: "connected" });
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', db: 'connected' });
   } catch (err) {
-    res.status(500).json({ message: `db not connected, error: ${ err.message }` });
+    res.status(500).json({ status: 'error', db: 'not connected', error: err.message });
   }
 });
 
 app.use((req,res,next)=>{
    console.log(req.method, req.path, req.query)
    next()
-})
-
-app.get("/", (req, res) => {
-  res.json({message: "Hello, World!"});
-});
-
-app.post("/testpost",(req,res) =>{
-res.json({message: "You successful add the data"});
 })
 
 app.use("/api/users", userRouter);
@@ -67,7 +56,8 @@ async function shutdown(code = 0) {
     await new Promise(resolve => server.close(resolve));
     console.log('HTTP server closed.');
     // If you have DB connections, close them here
-     await pool.end()
+        await prisma.$disconnect();
+    console.log("Prisma disconnected")
   } catch (err) {
     console.error('Error during shutdown:', err);
     code = 1;
