@@ -20,78 +20,68 @@ async function comparePassword(inputPassword, storedHash) {
 
 async function register(req, res, next) {
   if (!req.body) req.body = {};
-  
+
   const { error, value } = userSchema.validate(req.body, { abortEarly: false });
-  
-  if (error){
+
+  if (error) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: `${error.message}` });
   }
-  //   const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-  //  value.email,
-  // ]);
 
-  // if(result.rows.length>0){
-  //   return res
-  //     .status(StatusCodes.BAD_REQUEST)
-  //     .json({ error: `User already exist` });
-  // }
-    
-   let newUser = null;
+  let newUser = null;
   value.hashedPassword = await hashPassword(value.password);
   delete value.password;
+  const { name, email, hashedPassword } = value;
 
   try {
-     newUser = await prisma.user.create({
-    data: { name:value.name, email:value.email, hashedPassword:value.hashedPassword },
-    select: { name: true, email: true, id: true} // specify the column values to return
-  });
-
+    newUser = await prisma.user.create({
+      data: { name, email, hashedPassword },
+      select: { id: true, name: true, email: true },
+    });
   } catch (err) {
     if (err.name === "PrismaClientKnownRequestError" && err.code === "P2002") {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: `The email was already registered` });
-    }else return next(err);
+    } else return next(err);
   }
 
-  global.user_id =newUser.id;
-  const { email, name } = newUser;
-  return res.status(StatusCodes.CREATED).json({email,name});
+  global.user_id = newUser.id;
+  return res.status(StatusCodes.CREATED).json({name: newUser.name, email: newUser.email});
 }
 
 async function logon(req, res) {
-  if (!req.body?.email || !req.body?.password){
- return res.status(StatusCodes.BAD_REQUEST).json({
-    message: "Email and password required",
-  });
+  if (!req.body?.email || !req.body?.password) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Email and password required",
+    });
   }
-const email=req.body.email.trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: {email}});
-  // const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-  //   req.body.email.trim().toLowerCase(),
-  // ]);
+  const validEmail = req.body.email.trim().toLowerCase();
+  const user = await prisma.user.findUnique({
+    where: { email: validEmail },
+    select: { id: true, name: true, email: true, hashedPassword: true },
+  });
 
-if(!user){
-  return res
+  if (!user) {
+    return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ message: "Authentication Failed" });}
-  
-      
+      .json({ message: "Authentication Failed" });
+  }
+
   const isPasswordCorrect = await comparePassword(
     req.body.password,
-  user.hashedPassword,
+    user.hashedPassword,
   );
-
+  const { email, name } = user;
   if (isPasswordCorrect) {
     global.user_id = user.id;
-    const { email, name} = user;
-    res.status(StatusCodes.OK).json({email,name});
-  } else return res
+    res.status(StatusCodes.OK).json({ email, name });
+  } else
+    return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ message: "Authentication Failed" });}
-
+      .json({ message: "Authentication Failed" });
+}
 
 function logoff(req, res) {
   global.user_id = null;
