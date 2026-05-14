@@ -14,7 +14,7 @@ async function create(req, res) {
 const{title, isCompleted}=value;
       const newTask = await prisma.task.create({
       data: { title, isCompleted, userId: global.user_id },
-      select: { title: true, isCompleted: true , id:true}
+      select: { title: true, isCompleted: true , id:true, priority: true}
     });
 
   res.status(StatusCodes.CREATED).json(newTask);
