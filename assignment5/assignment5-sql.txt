@@ -36,11 +36,11 @@ RETURNING order_id;
 
 INSERT INTO line_items  
 (order_id, product_id, quantity)  
-VALUES (253, 23, 2), 
-(253, 18, 2), 
-(253, 43, 2),   
-(253, 9, 2), 
-(253, 44, 2);
+VALUES (253, 23, 10), 
+(253, 18, 10), 
+(253, 43, 10),   
+(253, 9, 10), 
+(253, 44, 10);
 COMMIT;
 
 SELECT *  FROM line_items WHERE order_id=253;
