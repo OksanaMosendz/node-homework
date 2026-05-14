@@ -49,6 +49,10 @@ try {
 
 async function index(req, res) {
 
+const page = parseInt(req.query.page) || 1;
+const limit = parseInt(req.query.limit) || 10;
+const skip = (page - 1) * limit;
+
   const userTasks = await prisma.task.findMany({
   where: {
     userId: global.user_id, 
@@ -65,7 +69,11 @@ async function index(req, res) {
         email: true
       }
     }
-}});
+},
+skip: skip,
+take: limit,
+orderBy: {createdAt: 'desc'}
+});
 
   if (userTasks.length===0) {
     return res
@@ -74,7 +82,20 @@ async function index(req, res) {
   }
    
 
-  return res.status(StatusCodes.OK).json(userTasks);
+const totalTasks = await prisma.task.count({
+  where: { userId: global.user_id }
+});
+
+const pagination={
+page,
+limit, 
+total: totalTasks,
+pages: Math.ceil(totalTasks/limit),
+hasNext: page*limit<totalTasks,
+hasPrev:  page>1,
+}
+
+  return res.status(StatusCodes.OK).json({userTasks, pagination});
 }
 
 async function show(req, res, next){
