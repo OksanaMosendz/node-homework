@@ -47,16 +47,41 @@ try {
   return res.json(deletedTask);
 };
 
+
 async function index(req, res) {
 
 const page = parseInt(req.query.page) || 1;
 const limit = parseInt(req.query.limit) || 10;
 const skip = (page - 1) * limit;
+const whereClause = { userId: global.user_id };
+const{find, isCompleted, priority, min_date, max_date}=req.query;
+
+if (find){
+  whereClause.title = {
+    contains: find,       
+    mode: 'insensitive'             
+  };
+}
+
+if(isCompleted!==undefined){
+  whereClause.isCompleted=isCompleted==='true'}
+
+ if(priority){ whereClause.priority={
+    contains: priority,       
+    mode: 'insensitive'             
+  }}
+
+
+ if (min_date||max_date) {
+  whereClause.createdAt={};
+  if(min_date) whereClause.createdAt.gte= new Date(min_date);
+  if(max_date) whereClause.createdAt.lte= new Date(max_date);       
+  }
+
+
 
   const userTasks = await prisma.task.findMany({
-  where: {
-    userId: global.user_id, 
-  },
+  where: whereClause,
   select: { 
     id: true,
     title: true, 
@@ -70,7 +95,7 @@ const skip = (page - 1) * limit;
       }
     }
 },
-skip: skip,
+skip,
 take: limit,
 orderBy: {createdAt: 'desc'}
 });
@@ -83,7 +108,7 @@ orderBy: {createdAt: 'desc'}
    
 
 const totalTasks = await prisma.task.count({
-  where: { userId: global.user_id }
+  where: whereClause
 });
 
 const pagination={
@@ -151,7 +176,7 @@ try {
       id: idToFind,
       userId: global.user_id,
     },
-    select: { title: true, isCompleted: true, id: true }
+    select: { title: true, isCompleted: true, id: true , priority:true, createdAt: "true"}
   });
 } catch (err) {
   if (err.code === "P2025" ) {
