@@ -3,6 +3,8 @@ const errorHandler = require("./middleware/error-handler");
 const notFoundErrorHandler=require('./middleware/not-found.js');
 const userRouter = require("./routes/userRoutes");
 const taskRouter= require("./routes/taskRoutes.js");
+const analyticRouter= require("./routes/analyticRoutes.js");
+
 const authMiddleware = require('./middleware/auth');
 const prisma = require("./db/prisma");
 const app = express();
@@ -28,6 +30,8 @@ app.use((req,res,next)=>{
 app.use("/api/users", userRouter);
 
 app.use("/api/tasks", authMiddleware, taskRouter);
+
+app.use("/api/analytics", analyticRouter)
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);
