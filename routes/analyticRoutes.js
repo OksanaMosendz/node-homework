@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {statistic} = require("../controllers/analyticsController");
+const {userStatistic, allUsersStatistic} = require("../controllers/analyticsController");
 
 
-router.route("/users/:id").get(statistic);
+router.route("/users/:id").get(userStatistic);
+router.route("/users").get(allUsersStatistic);
+
 
 
 module.exports = router;

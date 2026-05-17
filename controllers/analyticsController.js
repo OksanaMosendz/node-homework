@@ -1,6 +1,7 @@
 const prisma = require("../db/prisma");
+const { StatusCodes } = require("http-status-codes");
 
-async function statistic (req,res){
+async function userStatistic (req,res){
 
  const userId = parseInt(req.params.id);
 if (isNaN(userId)) {
@@ -57,4 +58,51 @@ return res.status(200).json({ taskStats, recentTasks, weeklyProgress});
 
 }
 
-module.exports={statistic};
+async function allUsersStatistic(req,res){
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const usersRaw = await prisma.user.findMany({
+  include: {
+    Task: {
+      where: { isCompleted: false },
+      select: { id: true },
+      take: 5
+    },
+    _count: {
+      select: {
+        Task: true
+      }
+    }
+  },
+  skip,
+  take: limit,
+  orderBy: { createdAt: 'desc' }
+});
+
+const users = usersRaw.map(user => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  createdAt: user.createdAt,
+  _count: user._count,
+  Task: user.Task
+}));
+
+const totalUsers = await prisma.user.count();
+
+const pagination = {
+    page,
+    limit,
+    total: totalUsers,
+    pages: Math.ceil(totalUsers / limit),
+    hasNext: page * limit < totalUsers,
+    hasPrev: page > 1,
+  };
+
+    return res.status(StatusCodes.OK).json({ users, pagination });
+  
+}
+
+module.exports={userStatistic, allUsersStatistic};
