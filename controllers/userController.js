@@ -35,10 +35,43 @@ async function register(req, res, next) {
   const { name, email, hashedPassword } = value;
 
   try {
-    newUser = await prisma.user.create({
+   const result = await prisma.$transaction(async (tx) => {  
+    newUser = await tx.user.create({
       data: { name, email, hashedPassword },
       select: { id: true, name: true, email: true },
     });
+
+    const welcomeTaskData = [
+      { title: "Complete your profile", userId: newUser.id, priority: "medium" },
+      { title: "Add your first task", userId: newUser.id, priority: "high" },
+      { title: "Explore the app", userId: newUser.id, priority: "low" }
+    ];
+    await tx.task.createMany({ data: welcomeTaskData });
+    const welcomeTasks = await tx.task.findMany({
+      where: {
+        userId: newUser.id,
+        title: { in: welcomeTaskData.map(t => t.title) }
+      },
+      select: {
+        id: true,
+        title: true,
+        isCompleted: true,
+        userId: true,
+        priority: true
+      }
+    });
+
+    return { user: newUser, welcomeTasks };
+})
+  global.user_id = newUser.id;
+  return res.status(StatusCodes.CREATED)
+  .json({
+    user: result.user,
+    welcomeTasks: result.welcomeTasks,
+    transactionStatus: "success"
+  });
+    
+  
   } catch (err) {
     if (err.name === "PrismaClientKnownRequestError" && err.code === "P2002") {
       return res
@@ -47,8 +80,6 @@ async function register(req, res, next) {
     } else return next(err);
   }
 
-  global.user_id = newUser.id;
-  return res.status(StatusCodes.CREATED).json({name: newUser.name, email: newUser.email});
 }
 
 async function logon(req, res) {
