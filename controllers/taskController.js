@@ -190,7 +190,7 @@ async function index(req, res) {
   return res.status(StatusCodes.OK).json({ tasks: userTasks, pagination });
 }
 
-async function show(req, res, next) {
+async function show(req, res) {
   const idToFind = parseInt(req.params?.id);
 
   if (!idToFind) {
@@ -201,8 +201,7 @@ async function show(req, res, next) {
 
   const whereClause = { userId: global.user_id, id: idToFind };
   let task = null;
-
-  try {
+      
     task = await prisma.task.findUnique({
       where: whereClause,
       select: {
@@ -219,14 +218,11 @@ async function show(req, res, next) {
         },
       },
     });
-  } catch (err) {
-    if (err.code === "P2025") {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ message: "The task was not found." });
-    } else {
-      return next(err);
-    }
+
+  if (!task){
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ message: "Task not found" });
   }
 
   return res.status(StatusCodes.OK).json(task);

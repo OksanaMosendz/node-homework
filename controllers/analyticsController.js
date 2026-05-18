@@ -47,8 +47,8 @@ async function getUserAnalytics(req, res) {
   });
 
   const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(-7);
-  oneWeekAgo.toLocaleDateString("sv-SE");
+oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
 
   const weeklyProgress = await prisma.task.groupBy({
     by: ["createdAt"],
