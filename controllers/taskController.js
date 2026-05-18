@@ -28,14 +28,57 @@ async function create(req, res) {
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: `${error.message}` });
   }
-  const { title, isCompleted } = value;
+  const { title, isCompleted , priority} = value;
   const newTask = await prisma.task.create({
-    data: { title, isCompleted, userId: global.user_id },
+    data: { title, isCompleted, userId: global.user_id, priority },
     select: { title: true, isCompleted: true, id: true, priority: true },
   });
 
   res.status(StatusCodes.CREATED).json(newTask);
 }
+
+async function bulkCreate (req,res,next){
+ const { tasks } = req.body;
+
+  if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+    return res.status(400).json({ 
+      error: "Invalid request data. Expected an array of tasks." 
+    });
+  }
+
+ 
+  const validTasks = [];
+
+  for (const task of tasks) {
+    const { error, value } = taskSchema.validate(task);
+    if (error) {
+      return res.status(400).json({
+        error: "Validation failed",
+        details: error.details,
+      });
+    }
+    validTasks.push({
+      title: value.title,
+      isCompleted: value.isCompleted,
+      priority: value.priority,
+      userId: global.user_id
+    });
+  }
+
+  try {
+    const result = await prisma.task.createMany({
+      data: validTasks,
+      skipDuplicates: false
+    });
+
+    res.status(201).json({
+      message: "success!",
+      tasksCreated: result.count,
+      totalRequested: validTasks.length
+    });
+  } catch (err) {
+   return next(err);
+}}
 
 async function deleteTask(req, res, next) {
   const idToFind = parseInt(req.params?.id);
@@ -134,7 +177,7 @@ async function index(req, res) {
     hasPrev: page > 1,
   };
 
-  return res.status(StatusCodes.OK).json({ userTasks, pagination });
+  return res.status(StatusCodes.OK).json({ tasks: userTasks, pagination });
 }
 
 async function show(req, res, next) {
@@ -214,4 +257,4 @@ async function update(req, res, next) {
   return res.status(StatusCodes.OK).json(updatedTask);
 }
 
-module.exports = { update, deleteTask, show, index, create };
+module.exports = { update, deleteTask, show, index, create, bulkCreate};
