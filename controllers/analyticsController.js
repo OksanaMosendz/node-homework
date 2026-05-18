@@ -1,7 +1,7 @@
 const prisma = require("../db/prisma");
 const { StatusCodes } = require("http-status-codes");
 
-async function userStatistic (req,res){
+async function getUserAnalytics(req,res){
 
  const userId = parseInt(req.params.id);
 if (isNaN(userId)) {
@@ -58,7 +58,7 @@ return res.status(200).json({ taskStats, recentTasks, weeklyProgress});
 
 }
 
-async function allUsersStatistic(req,res){
+async function getUsersWithStats(req,res){
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
@@ -105,4 +105,45 @@ const pagination = {
   
 }
 
-module.exports={userStatistic, allUsersStatistic};
+async function searchTasks(req,res){
+  const searchQuery=req.query.q;
+
+if (!searchQuery || searchQuery.trim().length < 2) {
+  return res.status(400).json({ 
+    error: "Search query must be at least 2 characters long" 
+  });
+}
+const limit=parseInt(req.query.limit);
+
+const searchPattern = `%${searchQuery}%`;
+const exactMatch = searchQuery;
+const startsWith = `${searchQuery}%`;
+
+const searchResults = await prisma.$queryRaw`
+  SELECT 
+    t.id,
+    t.title,
+    t.is_completed as "isCompleted",
+    t.priority,
+    t.created_at as "createdAt",
+    t.user_id as "userId",
+    u.name as "user_name"
+  FROM tasks t
+  JOIN users u ON t.user_id = u.id
+  WHERE t.title ILIKE ${searchPattern} 
+     OR u.name ILIKE ${searchPattern}
+  ORDER BY 
+    CASE 
+      WHEN t.title ILIKE ${exactMatch} THEN 1
+      WHEN t.title ILIKE ${startsWith} THEN 2
+      WHEN t.title ILIKE ${searchPattern} THEN 3
+      ELSE 4
+    END,
+    t.created_at DESC
+  LIMIT ${limit}`;
+
+return res.status(200).json({
+  results: searchResults, query: searchQuery, count: searchResults.length});
+
+}
+module.exports= {searchTasks, getUserAnalytics, getUsersWithStats};

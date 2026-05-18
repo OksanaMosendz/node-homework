@@ -188,17 +188,26 @@ async function show(req, res, next) {
       .status(400)
       .json({ message: "The task ID passed is not valid." });
   }
+
+  const whereClause = { userId: global.user_id, id: idToFind};
   let task = null;
 
   try {
     task = await prisma.task.findUnique({
-      where: { id: idToFind, userId: global.user_id },
-      select: {
-        id: true,
-        title: true,
-        isCompleted: true,
+         where: whereClause,
+    select: {
+      id: true,
+      title: true,
+      isCompleted: true,
+      priority: true,
+      createdAt: true,
+      User: {
+        select: {
+          name: true,
+          email: true,
+        },
       },
-    });
+    }});
   } catch (err) {
     if (err.code === "P2025") {
       return res.status(404).json({ message: "The task was not found." });
