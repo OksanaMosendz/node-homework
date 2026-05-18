@@ -1,98 +1,111 @@
 const prisma = require("../db/prisma");
 const { StatusCodes } = require("http-status-codes");
+const { paginationSchema } = require("../validation/paginationSchema");
 
-async function getUserAnalytics(req,res){
-
- const userId = parseInt(req.params.id);
-if (isNaN(userId)) {
-  return res.status(400).json({ error: "Invalid user ID" });
-}
+async function getUserAnalytics(req, res) {
+  const userId = parseInt(req.params.id);
+  if (isNaN(userId)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid user ID" });
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-   select:{ id: true}})
- 
-    if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    select: { id: true },
+  });
+
+  if (!user) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ message: "User not found" });
   }
 
   const taskStats = await prisma.task.groupBy({
-  by: ['isCompleted'],
-  where: { userId },
-  _count: {
-    id: true
-  }
-});
+    by: ["isCompleted"],
+    where: { userId },
+    _count: {
+      id: true,
+    },
+  });
 
-const recentTasks = await prisma.task.findMany({
-  where: { userId },
-  select: {
-    id: true,
-    title: true,
-    isCompleted: true,
-    priority: true,
-    createdAt: true,
-    userId: true,
-    User: {
-      select: { name: true }
-    }
-  },
-  orderBy: { createdAt: 'desc' },
-  take: 10
-});
+  const recentTasks = await prisma.task.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      title: true,
+      isCompleted: true,
+      priority: true,
+      createdAt: true,
+      userId: true,
+      User: {
+        select: { name: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
 
-const oneWeekAgo = new Date();
-oneWeekAgo.setDate(-7);
-oneWeekAgo.toLocaleDateString('sv-SE');
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(-7);
+  oneWeekAgo.toLocaleDateString("sv-SE");
 
-const weeklyProgress = await prisma.task.groupBy({
-  by: ['createdAt'],
-  where: {
-    userId,
-    createdAt: { gte: oneWeekAgo }
-  },
-  _count: { id: true }
-});
+  const weeklyProgress = await prisma.task.groupBy({
+    by: ["createdAt"],
+    where: {
+      userId,
+      createdAt: { gte: oneWeekAgo },
+    },
+    _count: { id: true },
+  });
 
-return res.status(200).json({ taskStats, recentTasks, weeklyProgress});
-
+  return res
+    .status(StatusCodes.OK)
+    .json({ taskStats, recentTasks, weeklyProgress });
 }
 
-async function getUsersWithStats(req,res){
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+async function getUsersWithStats(req, res) {
+  const { error, value } = paginationSchema.validate(req.query);
+
+  if (error) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: `${error.message}` });
+  }
+
+  const { page, limit } = value;
   const skip = (page - 1) * limit;
 
   const usersRaw = await prisma.user.findMany({
-  include: {
-    Task: {
-      where: { isCompleted: false },
-      select: { id: true },
-      take: 5
+    include: {
+      Task: {
+        where: { isCompleted: false },
+        select: { id: true },
+        take: 5,
+      },
+      _count: {
+        select: {
+          Task: true,
+        },
+      },
     },
-    _count: {
-      select: {
-        Task: true
-      }
-    }
-  },
-  skip,
-  take: limit,
-  orderBy: { createdAt: 'desc' }
-});
+    skip,
+    take: limit,
+    orderBy: { createdAt: "desc" },
+  });
 
-const users = usersRaw.map(user => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  createdAt: user.createdAt,
-  _count: user._count,
-  Task: user.Task
-}));
+  const users = usersRaw.map((user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    createdAt: user.createdAt,
+    _count: user._count,
+    Task: user.Task,
+  }));
 
-const totalUsers = await prisma.user.count();
+  const totalUsers = await prisma.user.count();
 
-const pagination = {
+  const pagination = {
     page,
     limit,
     total: totalUsers,
@@ -101,25 +114,24 @@ const pagination = {
     hasPrev: page > 1,
   };
 
-    return res.status(StatusCodes.OK).json({ users, pagination });
-  
+  return res.status(StatusCodes.OK).json({ users, pagination });
 }
 
-async function searchTasks(req,res){
-  const searchQuery=req.query.q;
+async function searchTasks(req, res) {
+  const searchQuery = req.query.q;
 
-if (!searchQuery || searchQuery.trim().length < 2) {
-  return res.status(400).json({ 
-    error: "Search query must be at least 2 characters long" 
-  });
-}
-const limit=parseInt(req.query.limit);
+  if (!searchQuery || searchQuery.trim().length < 2) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "Search query must be at least 2 characters long",
+    });
+  }
+  const limit = parseInt(req.query.limit)||20;
 
-const searchPattern = `%${searchQuery}%`;
-const exactMatch = searchQuery;
-const startsWith = `${searchQuery}%`;
+  const searchPattern = `%${searchQuery}%`;
+  const exactMatch = searchQuery;
+  const startsWith = `${searchQuery}%`;
 
-const searchResults = await prisma.$queryRaw`
+  const searchResults = await prisma.$queryRaw`
   SELECT 
     t.id,
     t.title,
@@ -142,8 +154,10 @@ const searchResults = await prisma.$queryRaw`
     t.created_at DESC
   LIMIT ${limit}`;
 
-return res.status(200).json({
-  results: searchResults, query: searchQuery, count: searchResults.length});
-
+  return res.status(StatusCodes.OK).json({
+    results: searchResults,
+    query: searchQuery,
+    count: searchResults.length,
+  });
 }
-module.exports= {searchTasks, getUserAnalytics, getUsersWithStats};
+module.exports = { searchTasks, getUserAnalytics, getUsersWithStats };
