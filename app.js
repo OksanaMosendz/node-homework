@@ -4,11 +4,17 @@ const notFoundErrorHandler=require('./middleware/not-found.js');
 const userRoutes = require("./routes/userRoutes");
 const taskRoutes= require("./routes/taskRoutes.js");
 const analyticsRoutes= require("./routes/analyticsRoutes.js");
-
 const prisma = require("./db/prisma");
 const app = express();
+const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const { xss } = require("express-xss-sanitizer");
+const rateLimiter = require("express-rate-limit");
 
+app.use(cookieParser());
 app.use(express.json({ limit: "1kb" }));
+app.set("trust proxy", 1);
+
 
 app.get('/health', async (req, res) => {
   try {
@@ -18,6 +24,16 @@ app.get('/health', async (req, res) => {
     res.status(500).json({ status: 'error', db: 'not connected', error: err.message });
   }
 });
+
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  }),
+);
+
+app.use(helmet());
+app.use(xss());
 
 app.use((req,res,next)=>{
    console.log(req.method, req.path, req.query)
