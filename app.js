@@ -4,11 +4,9 @@ const notFoundErrorHandler=require('./middleware/not-found.js');
 const userRoutes = require("./routes/userRoutes");
 const taskRoutes= require("./routes/taskRoutes.js");
 const analyticsRoutes= require("./routes/analyticsRoutes.js");
-const authMiddleware = require('./middleware/auth');
+
 const prisma = require("./db/prisma");
 const app = express();
-
-global.user_id = null;
 
 app.use(express.json({ limit: "1kb" }));
 
@@ -28,9 +26,9 @@ app.use((req,res,next)=>{
 
 app.use("/api/users", userRoutes);
 
-app.use("/api/tasks", authMiddleware, taskRoutes);
+app.use("/api/tasks", taskRoutes);
 
-app.use("/api/analytics",authMiddleware, analyticsRoutes)
+app.use("/api/analytics", analyticsRoutes)
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);

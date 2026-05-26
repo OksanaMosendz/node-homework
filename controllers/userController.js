@@ -84,8 +84,7 @@ async function register(req, res, next) {
 
       return { user: newUser, welcomeTasks};
     });
-    // global.user_id = newUser.id;
-    return res.status(StatusCodes.CREATED).json({
+  return res.status(StatusCodes.CREATED).json({
       user: result.user,
       csrfToken: setJwtCookie(req,res,result.user),
       welcomeTasks: result.welcomeTasks,
@@ -125,8 +124,7 @@ async function logon(req, res) {
   const { email, name } = user;
   if (isPasswordCorrect) {
 
-    // global.user_id = user.id;
-    res.status(StatusCodes.OK).json({ email, name, csrfToken: setJwtCookie(req,res,user)});
+     res.status(StatusCodes.OK).json({ email, name, csrfToken: setJwtCookie(req,res,user)});
   } else
     return res
       .status(StatusCodes.UNAUTHORIZED)
@@ -142,7 +140,7 @@ async function show(req, res) {
       .json({ error: "Invalid user ID" });
   }
 
-  if (userId !== global.user_id) {
+  if (userId !== req.user.id) {
     return res.StatusCodes.FORBIDDEN.json({ error: "Access denied" });
   }
 
@@ -178,7 +176,7 @@ async function show(req, res) {
 
 function logoff(req, res) {
   res.clearCookie("jwt", cookieFlags(req));
-  // global.user_id = null;
+
   res.sendStatus(StatusCodes.OK);
 }
 

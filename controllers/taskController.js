@@ -31,7 +31,7 @@ async function create(req, res) {
   }
   const { title, isCompleted, priority } = value;
   const newTask = await prisma.task.create({
-    data: { title, isCompleted, userId: global.user_id, priority },
+    data: { title, isCompleted, userId: req.user.id, priority },
     select: { title: true, isCompleted: true, id: true, priority: true },
   });
 
@@ -61,7 +61,7 @@ async function bulkCreate(req, res, next) {
       title: value.title,
       isCompleted: value.isCompleted,
       priority: value.priority,
-      userId: global.user_id,
+      userId: req.user.id,
     });
   }
 
@@ -94,7 +94,7 @@ async function deleteTask(req, res, next) {
     deletedTask = await prisma.task.delete({
       where: {
         id: idToFind,
-        userId: global.user_id,
+        userId: req.user.id,
       },
       select: { title: true, isCompleted: true, id: true },
     });
@@ -121,7 +121,7 @@ async function index(req, res) {
 
   const { page, limit } = value;
   const skip = (page - 1) * limit;
-  const whereClause = { userId: global.user_id };
+  const whereClause = { userId: req.user.id };
   const { find, isCompleted, priority, min_date, max_date } = req.query;
 
   if (find) {
@@ -199,7 +199,7 @@ async function show(req, res) {
       .json({ message: "The task ID passed is not valid." });
   }
 
-  const whereClause = { userId: global.user_id, id: idToFind };
+  const whereClause = { userId: req.user.id, id: idToFind };
   let task = null;
       
     task = await prisma.task.findUnique({
@@ -254,7 +254,7 @@ async function update(req, res, next) {
       data: value,
       where: {
         id: idToFind,
-        userId: global.user_id,
+        userId: req.user.id,
       },
       select: {
         title: true,
