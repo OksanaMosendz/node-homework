@@ -4,6 +4,23 @@ const util = require("util");
 const scrypt = util.promisify(crypto.scrypt);
 const { userSchema } = require("../validation/userSchema");
 const prisma = require("../db/prisma");
+const { randomUUID } = require("crypto");
+const jwt = require("jsonwebtoken");
+
+const cookieFlags = (req) => {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+  };
+};
+
+const setJwtCookie = (req, res, user) => {
+  const payload = { id: user.id, csrfToken: randomUUID() };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }); 
+  res.cookie("jwt", token, { ...cookieFlags(req), maxAge: 3600000 }); 
+  return payload.csrfToken;
+};
 
 async function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -65,11 +82,12 @@ async function register(req, res, next) {
         },
       });
 
-      return { user: newUser, welcomeTasks };
+      return { user: newUser, welcomeTasks};
     });
-    global.user_id = newUser.id;
+    // global.user_id = newUser.id;
     return res.status(StatusCodes.CREATED).json({
       user: result.user,
+      csrfToken: setJwtCookie(req,res,result.user),
       welcomeTasks: result.welcomeTasks,
       transactionStatus: "success",
     });
@@ -106,8 +124,9 @@ async function logon(req, res) {
   );
   const { email, name } = user;
   if (isPasswordCorrect) {
-    global.user_id = user.id;
-    res.status(StatusCodes.OK).json({ email, name });
+
+    // global.user_id = user.id;
+    res.status(StatusCodes.OK).json({ email, name, csrfToken: setJwtCookie(req,res,user)});
   } else
     return res
       .status(StatusCodes.UNAUTHORIZED)
@@ -123,7 +142,7 @@ async function show(req, res) {
       .json({ error: "Invalid user ID" });
   }
 
-  if (userId === global.user_id) {
+  if (userId !== global.user_id) {
     return res.StatusCodes.FORBIDDEN.json({ error: "Access denied" });
   }
 
@@ -158,7 +177,8 @@ async function show(req, res) {
 }
 
 function logoff(req, res) {
-  global.user_id = null;
+  res.clearCookie("jwt", cookieFlags(req));
+  // global.user_id = null;
   res.sendStatus(StatusCodes.OK);
 }
 
