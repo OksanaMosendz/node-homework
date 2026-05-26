@@ -7,11 +7,13 @@ const prisma = require("../db/prisma");
 const { randomUUID } = require("crypto");
 const jwt = require("jsonwebtoken");
 
+
 const cookieFlags = (req) => {
   return {
+    ...(process.env.NODE_ENV === "production" && { domain: req.hostname }), // add domain into cookie for production only
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
   };
 };
 
