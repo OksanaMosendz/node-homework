@@ -1,8 +1,9 @@
 const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const notFoundErrorHandler=require('./middleware/not-found.js');
-const userRouter = require("./routes/userRoutes");
-const taskRouter= require("./routes/taskRoutes.js");
+const userRoutes = require("./routes/userRoutes");
+const taskRoutes= require("./routes/taskRoutes.js");
+const analyticsRoutes= require("./routes/analyticsRoutes.js");
 const authMiddleware = require('./middleware/auth');
 const prisma = require("./db/prisma");
 const app = express();
@@ -25,9 +26,11 @@ app.use((req,res,next)=>{
    next()
 })
 
-app.use("/api/users", userRouter);
+app.use("/api/users", userRoutes);
 
-app.use("/api/tasks", authMiddleware, taskRouter);
+app.use("/api/tasks", authMiddleware, taskRoutes);
+
+app.use("/api/analytics",authMiddleware, analyticsRoutes)
 
 app.use(notFoundErrorHandler);
 app.use(errorHandler);
