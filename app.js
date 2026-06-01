@@ -11,8 +11,8 @@ const helmet = require("helmet");
 const { xss } = require("express-xss-sanitizer");
 const rateLimiter = require("express-rate-limit");
 
-app.use(cookieParser());
 app.use(express.json({ limit: "1kb" }));
+app.use(cookieParser());
 app.set("trust proxy", 1);
 
 
