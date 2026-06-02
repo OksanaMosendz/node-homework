@@ -74,3 +74,48 @@ const { error } = userSchema.validate(
 
 
   })
+
+  describe("tasks validation tests", () => {
+ it("8. task title is required", () => {
+    const { error } = taskSchema.validate(
+      { isCompleted: false },
+      { abortEarly: false },
+    );
+       expect(
+      error.details.find((detail) => detail.context.key == "title"),
+    ).toBeDefined();
+  });
+
+   it("9. valid value for isCompleted", () => {
+    const { error } = taskSchema.validate(
+      { title:"read a book", isCompleted: "hhgh" },
+      { abortEarly: false },
+    );
+       expect(
+      error.details.find((detail) => detail.context.key == "isCompleted"),
+    ).toBeDefined();
+  });
+
+   it("10. If an isCompleted value is not specified,a default of false is provided", () => {
+    const { value } = taskSchema.validate(
+      { title:"read a book" },
+      { abortEarly: false },
+    );
+
+       expect(value.isCompleted
+    ).toBe(false);
+  });
+
+     it("11.If isCompleted  provided  true value, it remains true after validation", () => {
+    const { value } = taskSchema.validate(
+      { title:"read a book" , isCompleted: true},
+      { abortEarly: false },
+    );
+
+       expect(value.isCompleted
+    ).toBe(true);
+  });
+
+  
+  });
+
