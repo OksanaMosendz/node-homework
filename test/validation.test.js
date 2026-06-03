@@ -106,7 +106,7 @@ const { error } = userSchema.validate(
     ).toBe(false);
   });
 
-     it("11.If isCompleted  provided  true value, it remains true after validation", () => {
+     it("11. If isCompleted  provided  true value, it remains true after validation", () => {
     const { value } = taskSchema.validate(
       { title:"read a book" , isCompleted: true},
       { abortEarly: false },
@@ -115,7 +115,23 @@ const { error } = userSchema.validate(
        expect(value.isCompleted
     ).toBe(true);
   });
+ });
 
-  
+  describe("tasks patch tests", () => {
+ it("12. doesn't require a title", () => {
+    const { error } = patchTaskSchema.validate(
+      { isCompleted: false },
+      { abortEarly: false },
+    );
+       expect(error).toBeFalsy();
   });
+
+   it("13. valid value for isCompleted", () => {
+    const { value } = patchTaskSchema.validate(
+      { title:"read a book" },
+      { abortEarly: false },
+    );
+       expect(value.isCompleted).toBeUndefined();
+  });
+});
 
