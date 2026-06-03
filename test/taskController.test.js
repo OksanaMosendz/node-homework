@@ -1,0 +1,97 @@
+require("dotenv").config();
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL; // point to the test database!
+const prisma = require("../db/prisma");
+const httpMocks = require("node-mocks-http");
+const waitForRouteHandlerCompletion = require("./waitForRouteHandlerCompletion");
+const EventEmitter = require("node:events");
+
+const {
+  index,
+  show,
+  create,
+  update,
+  deleteTask,
+} = require("../controllers/taskController");
+
+// a few useful globals
+let user1 = null;
+let user2 = null;
+let saveRes = null;
+let saveData = null;
+let saveTaskId = null;
+
+beforeAll(async () => {
+  // clear database
+  await prisma.Task.deleteMany(); // delete all tasks
+  await prisma.User.deleteMany(); // delete all users
+  user1 = await prisma.User.create({
+    data: { name: "Bob", email: "bob@sample.com", hashedPassword: "nonsense" },
+  });
+  user2 = await prisma.User.create({
+    data: {
+      name: "Alice",
+      email: "alice@sample.com",
+      hashedPassword: "nonsense",
+    },
+  });
+});
+
+afterAll(() => {
+  prisma.$disconnect();
+});
+
+describe("testing task creation", () => {
+  it("14. Creates a task", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: { title: "first task" },
+    });
+    saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
+    expect.assertions(1);
+    try {
+      await waitForRouteHandlerCompletion(create, req, saveRes);
+    } catch (e) {
+      expect(e.name).toBe("TypeError");
+    }
+  });
+
+  it("15. can't create a task with a bogus user id", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: { title: "first task" },
+    });
+    req.user = { id: 98989898 };
+    saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
+    expect.assertions(1);
+    try {
+      await waitForRouteHandlerCompletion(create, req, saveRes);
+    } catch (e) {
+      expect(e.name).toBe("PrismaClientKnownRequestError");
+    }
+  });
+
+  it("16. can create a task with valid user id, res.statusCode should be 201", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: { title: "first task" },
+    });
+    req.user = { id: user1.id };
+    saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
+    await create(req, saveRes);
+    expect(saveRes.statusCode).toBe(201);
+  });
+
+  it("17. The object returned from the create() call has the expected title", async () => {
+    saveData = saveRes._getJSONData();
+    expect(saveData.title).toBe( "first task");
+  });
+
+  it("18. The object has the right value for isCompleted.", async () => {
+    expect(saveData.isCompleted).toBe(false);
+  });
+
+  it("19.  The object does not have any value for userId.", async () => {
+    console.log(saveData.userId);
+    expect(saveData.userId).toBeUndefined();
+  });
+});
