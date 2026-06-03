@@ -77,21 +77,101 @@ describe("testing task creation", () => {
     });
     req.user = { id: user1.id };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    await create(req, saveRes);
+    await waitForRouteHandlerCompletion(create, req, saveRes);
     expect(saveRes.statusCode).toBe(201);
   });
 
   it("17. The object returned from the create() call has the expected title", async () => {
-    saveData = saveRes._getJSONData();
-    expect(saveData.title).toBe( "first task");
+   saveData = saveRes._getJSONData();
+    expect(saveData.title).toBe("first task");
   });
 
   it("18. The object has the right value for isCompleted.", async () => {
-    expect(saveData.isCompleted).toBe(false);
+     expect(saveData.isCompleted).toBe(false);
   });
 
   it("19.  The object does not have any value for userId.", async () => {
-    console.log(saveData.userId);
+   saveTaskId=saveData.id;
     expect(saveData.userId).toBeUndefined();
   });
+});
+
+describe("test getting created tasks", () => {
+   it("20. You can't get a list of tasks without a user id", async () => {
+    const req = httpMocks.createRequest({
+      method: "GET",
+    });
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});;
+   try{ await waitForRouteHandlerCompletion(index,req, saveRes);}
+catch (e){
+     expect(e.name).toBe("TypeError");}
+  });
+
+      it("21. If you use user1's id on index() the call returns a 200 status.", async () => {
+    const req = httpMocks.createRequest({
+      method: "GET",
+    });
+     req.user = { id: user1.id };
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});;
+    await waitForRouteHandlerCompletion(index,req, saveRes);
+    expect(saveRes.statusCode).toBe(200);
+  });
+
+    it("22. The returned object has a tasks array of length 1.", async () => {
+    saveData = saveRes._getJSONData();
+    expect(saveData.tasks.length).toBe(1);
+  });
+
+  it("23. The title in the first array object is as expected.", async () => {
+     expect(saveData.tasks[0].title).toBe("first task");
+  });
+
+   it("24. The first array object does not contain a userId", async () => {
+      expect(saveData.tasks[0].userId).toBeUndefined();
+  });
+
+     it("25. If you get the list of tasks using the userId from user2, you get a 404.", async () => {
+    const req = httpMocks.createRequest({
+      method: "GET",
+    });
+       req.user = {id: user2.id};
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});;
+   try{ await waitForRouteHandlerCompletion(index,req, saveRes);}
+   catch (e){
+    expect(e.name).toBe("BadRequest");}
+  });
+
+
+    it("26. You can retrieve the created task using show().", async () => {
+    const req = httpMocks.createRequest({
+      method: "GET",
+    });
+     req.user = { id: user1.id };
+     req.params = { id: saveTaskId.toString() }
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});;
+    await waitForRouteHandlerCompletion(show, req, saveRes);
+    expect(saveRes.statusCode).toBe(200);
+  });
+
+  
+      it("27. User2 can't retrieve this task entry. You should get a 404.", async () => {
+    const req = httpMocks.createRequest({
+      method: "GET",
+    });
+     req.user = { id: user2.id };
+     req.params = { id: saveTaskId.toString() }
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});;
+    try{ await waitForRouteHandlerCompletion(show, req, saveRes);}
+catch (e){
+    expect(e.name).toBe("BadRequest");}
+  });
+
+
+
+
+
+
+
+
+
 });
