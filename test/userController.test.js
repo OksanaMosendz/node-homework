@@ -11,6 +11,7 @@ const EventEmitter = require("node:events");
 // a few useful globals
 let saveRes = null;
 let saveData = null;
+let saveReq=null;
 
 const cookie = require("cookie");
 function MockResponseWithCookies() {
@@ -42,7 +43,6 @@ afterAll(() => {
 let jwtCookie;
 
 describe("testing logon, register, and logoff", () => {
-
   it("33. A user can be registered.", async () => {
     const req = httpMocks.createRequest({
       method: "POST",
@@ -54,7 +54,7 @@ describe("testing logon, register, and logoff", () => {
     expect(saveRes.statusCode).toBe(201); // success!
   });
 
-   it("34. The user can logon.", async () => {
+  it("34. The user can logon.", async () => {
     const req = httpMocks.createRequest({
       method: "POST",
       body: { email: "bob@sample.com", password: "Pa$$word20" },
@@ -64,32 +64,32 @@ describe("testing logon, register, and logoff", () => {
     expect(saveRes.statusCode).toBe(200); // success!
   });
 
-   it("35. A string in the cookie array starts with `jwt=`", async () => {
-   const setCookieArray = saveRes.get("Set-Cookie")
-   expect(setCookieArray[0].startsWith(`jwt=`)).toBe(true);
-   });
+  it("35. A string in the cookie array starts with `jwt=`", async () => {
+    const setCookieArray = saveRes.get("Set-Cookie");
+    expect(setCookieArray[0].startsWith(`jwt=`)).toBe(true);
+  });
 
-    it("36. That string contains `HttpOnly;`", async () => {
-   const setCookieArray = saveRes.get("Set-Cookie")
-   expect(setCookieArray[0]).toContain( "HttpOnly;");
-   });
+  it("36. That string contains `HttpOnly;`", async () => {
+    const setCookieArray = saveRes.get("Set-Cookie");
+    expect(setCookieArray[0]).toContain("HttpOnly;");
+  });
 
-    it("37.  The returned data from the register has the expected name.", async () => {
+  it("37. The returned data from the register has the expected name.", async () => {
     expect(saveData.user.name).toBe("Bob");
   });
 
-it("38.  The returned data contains a csrfToken.", async () => {
-      expect(saveData.csrfToken).toBeDefined();});
-
+  it("38. The returned data contains a csrfToken.", async () => {
+    expect(saveData.csrfToken).toBeDefined();
+  });
 
   it("39. You can now logoff", async () => {
-  const req = httpMocks.createRequest({
-   method: "POST",
+    const req = httpMocks.createRequest({
+      method: "POST",
+    });
+    saveRes = MockResponseWithCookies();
+    await waitForRouteHandlerCompletion(logoff, req, saveRes);
+    expect(saveRes.statusCode).toBe(200);
   });
-  saveRes = MockResponseWithCookies();
-  await waitForRouteHandlerCompletion(logoff, req, saveRes);
-  expect(saveRes.statusCode).toBe(200);
-});
 
   it("40. The logoff clears the cookie.", () => {
     const setCookieArray = saveRes.get("Set-Cookie");
@@ -97,46 +97,99 @@ it("38.  The returned data contains a csrfToken.", async () => {
     expect(jwtCookie).toContain("Jan 1970");
   });
 
-     it("41. A logon attempt with a bad password returns a 401.", async () => {
+  it("41. A logon attempt with a bad password returns a 401.", async () => {
     const req = httpMocks.createRequest({
       method: "POST",
       body: { email: "bob@sample.com", password: "Password" },
     });
     saveRes = MockResponseWithCookies();
-  try{  await waitForRouteHandlerCompletion(logon, req, saveRes);}
-  catch (e){
-    expect(saveRes.statusCode).toBe(401); }
+    try {
+      await waitForRouteHandlerCompletion(logon, req, saveRes);
+    } catch (e) {
+      expect(saveRes.statusCode).toBe(401);
+    }
   });
-
 
   it("42. You can't register with an email address that is already registered.", async () => {
     const req = httpMocks.createRequest({
       method: "POST",
       body: { name: "Bob", email: "bob@sample.com", password: "Pa$$word20" },
     });
-   
-    try{
-    saveRes = MockResponseWithCookies();
-    await waitForRouteHandlerCompletion(register, req, saveRes);}
-    catch(e) {
-   expect(e.name).toBe("BadRequest");
+
+    try {
+      saveRes = MockResponseWithCookies();
+      await waitForRouteHandlerCompletion(register, req, saveRes);
+    } catch (e) {
+      expect(e.name).toBe("BadRequest");
     }
- 
- 
+  });
+});
+describe("Testing JWT middleware", () => {
+  it("61. jwtMiddleware Returns a 401 if the JWT cookie is not present in the req.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+    });
+    saveRes = MockResponseWithCookies();
+    await waitForRouteHandlerCompletion(jwtMiddleware, req, saveRes);
+    expect(saveRes.statusCode).toBe(401);
   });
 
-   
+  it("62. Returns a 401 if the JWT is invalid", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+    });
+    saveRes = MockResponseWithCookies();
+    const jwtCookie = jwt.sign({ id: 5, csrfToken: "badToken" }, "badSecret", {
+      expiresIn: "1h",
+    });
+    req.cookies = { jwt: jwtCookie };
+    await waitForRouteHandlerCompletion(jwtMiddleware, req, saveRes);
+    expect(saveRes.statusCode).toBe(401);
+  });
 
+  it("63. Returns a 401 if the JWT is valid but the CSRF token isn't.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+    });
+    saveRes = MockResponseWithCookies();
+    const jwtCookie = jwt.sign(
+      { id: 5, csrfToken: "badToken" }, process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+    );
+    if (!req.headers) {
+      req.headers = {};
+    }
+    req.headers["X-CSRF-TOKEN"] = "goodtoken";
+    req.cookies = { jwt: jwtCookie };
+    await waitForRouteHandlerCompletion(jwtMiddleware, req, saveRes);
+    expect(saveRes.statusCode).toBe(401);
+  });
 
+  it("64. Calls next() if both the token and the jwt are good.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+    });
+    saveRes = MockResponseWithCookies();
+    const jwtCookie = jwt.sign(
+      { id: 5, csrfToken: "goodtoken" }, process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+    );
+    if (!req.headers) {
+      req.headers = {};
+    }
+    req.headers["X-CSRF-TOKEN"] = "goodtoken";
+    req.cookies = { jwt: jwtCookie };
+saveReq=req;
+    const next = await waitForRouteHandlerCompletion(
+      jwtMiddleware,
+      req,
+      saveRes,
+    );
+    expect(next).toHaveBeenCalled();
+  });
 
-
-
-
-
-
-
-  
-   
-})
-
-
+ it("65. If both the token and the jwt are good, req.user.id has the appropriate value.",
+ async () => {
+expect(saveReq.user.id).toBe(5)
+});
+});
