@@ -7,8 +7,8 @@ const prisma = require("../db/prisma");
 const { randomUUID } = require("crypto");
 const jwt = require("jsonwebtoken");
 
-
 const cookieFlags = (req) => {
+  
   return {
     ...(process.env.NODE_ENV === "production" && { domain: req.hostname }), // add domain into cookie for production only
     httpOnly: true,
@@ -143,8 +143,7 @@ async function show(req, res) {
   }
 
   if (userId !== req.user.id) {
-    return res.StatusCodes.FORBIDDEN.json({ error: "Access denied" });
-  }
+    return res.status(StatusCodes.FORBIDDEN).json({ error: "Access denied" });}
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -177,6 +176,7 @@ async function show(req, res) {
 }
 
 function logoff(req, res) {
+  console.log("logoff controller");
   res.clearCookie("jwt", cookieFlags(req));
 
   res.sendStatus(StatusCodes.OK);

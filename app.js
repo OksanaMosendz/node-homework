@@ -1,7 +1,7 @@
 const express = require("express");
 const errorHandler = require("./middleware/error-handler");
 const notFoundErrorHandler=require('./middleware/not-found.js');
-const userRoutes = require("./routes/userRoutes");
+const userRoutes = require("./routes/userRoutes.js");
 const taskRoutes= require("./routes/taskRoutes.js");
 const analyticsRoutes= require("./routes/analyticsRoutes.js");
 const prisma = require("./db/prisma");
@@ -14,6 +14,7 @@ const rateLimiter = require("express-rate-limit");
 app.use(express.json({ limit: "1kb" }));
 app.use(cookieParser());
 app.set("trust proxy", 1);
+app.use(xss());
 
 
 app.get('/health', async (req, res) => {
@@ -33,7 +34,7 @@ app.use(
 );
 
 app.use(helmet());
-app.use(xss());
+
 
 app.use((req,res,next)=>{
    console.log(req.method, req.path, req.query)

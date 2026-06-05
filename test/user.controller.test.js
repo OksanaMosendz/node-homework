@@ -11,7 +11,7 @@ const EventEmitter = require("node:events");
 // a few useful globals
 let saveRes = null;
 let saveData = null;
-let saveReq=null;
+let saveReq = null;
 
 const cookie = require("cookie");
 function MockResponseWithCookies() {
@@ -103,11 +103,9 @@ describe("testing logon, register, and logoff", () => {
       body: { email: "bob@sample.com", password: "Password" },
     });
     saveRes = MockResponseWithCookies();
-    try {
       await waitForRouteHandlerCompletion(logon, req, saveRes);
-    } catch (e) {
       expect(saveRes.statusCode).toBe(401);
-    }
+    
   });
 
   it("42. You can't register with an email address that is already registered.", async () => {
@@ -124,6 +122,7 @@ describe("testing logon, register, and logoff", () => {
     }
   });
 });
+
 describe("Testing JWT middleware", () => {
   it("61. jwtMiddleware Returns a 401 if the JWT cookie is not present in the req.", async () => {
     const req = httpMocks.createRequest({
@@ -153,7 +152,8 @@ describe("Testing JWT middleware", () => {
     });
     saveRes = MockResponseWithCookies();
     const jwtCookie = jwt.sign(
-      { id: 5, csrfToken: "badToken" }, process.env.JWT_SECRET,
+      { id: 5, csrfToken: "badToken" },
+      process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
     if (!req.headers) {
@@ -171,7 +171,8 @@ describe("Testing JWT middleware", () => {
     });
     saveRes = MockResponseWithCookies();
     const jwtCookie = jwt.sign(
-      { id: 5, csrfToken: "goodtoken" }, process.env.JWT_SECRET,
+      { id: 5, csrfToken: "goodtoken" },
+      process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
     if (!req.headers) {
@@ -179,7 +180,7 @@ describe("Testing JWT middleware", () => {
     }
     req.headers["X-CSRF-TOKEN"] = "goodtoken";
     req.cookies = { jwt: jwtCookie };
-saveReq=req;
+    saveReq = req;
     const next = await waitForRouteHandlerCompletion(
       jwtMiddleware,
       req,
@@ -188,8 +189,7 @@ saveReq=req;
     expect(next).toHaveBeenCalled();
   });
 
- it("65. If both the token and the jwt are good, req.user.id has the appropriate value.",
- async () => {
-expect(saveReq.user.id).toBe(5)
-});
+  it("65. If both the token and the jwt are good, req.user.id has the appropriate value.", async () => {
+    expect(saveReq.user.id).toBe(5);
+  });
 });

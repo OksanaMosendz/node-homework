@@ -102,11 +102,8 @@ describe("test getting created tasks", () => {
       method: "GET",
     });
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    try {
-      await waitForRouteHandlerCompletion(index, req, saveRes);
-    } catch (e) {
-      expect(e.name).toBe("TypeError");
-    }
+    await waitForRouteHandlerCompletion(index, req, saveRes);
+    expect(e.name).toBe("TypeError");
   });
 
   it("21. If you use user1's id on index() the call returns a 200 status.", async () => {
@@ -138,11 +135,8 @@ describe("test getting created tasks", () => {
     });
     req.user = { id: user2.id };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    try {
-      await waitForRouteHandlerCompletion(index, req, saveRes);
-    } catch (e) {
-      expect(e.name).toBe("BadRequest");
-    }
+    await waitForRouteHandlerCompletion(index, req, saveRes);
+    expect(e.name).toBe("BadRequest");
   });
 
   it("26. You can retrieve the created task using show().", async () => {
@@ -163,11 +157,8 @@ describe("test getting created tasks", () => {
     req.user = { id: user2.id };
     req.params = { id: saveTaskId.toString() };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    try {
-      await waitForRouteHandlerCompletion(show, req, saveRes);
-    } catch (e) {
-      expect(e.name).toBe("BadRequest");
-    }
+    await waitForRouteHandlerCompletion(show, req, saveRes);
+    expect(e.name).toBe("BadRequest");
   });
 });
 
@@ -206,11 +197,8 @@ describe("test tasks update and delete", () => {
     req.user = { id: user2.id };
     req.params = { id: saveTaskId.toString() };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    try {
-      await waitForRouteHandlerCompletion(deleteTask, req, saveRes);
-    } catch (e) {
-      expect(e.name).toBe("BadRequest");
-    }
+    await waitForRouteHandlerCompletion(deleteTask, req, saveRes);
+    expect(e.name).toBe("BadRequest");
   });
 
   it("31. User1 can delete the task", async () => {
@@ -230,10 +218,7 @@ describe("test tasks update and delete", () => {
     });
     req.user = { id: user1.id };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    try {
-      await waitForRouteHandlerCompletion(index, req, saveRes);
-    } catch (e) {
-      expect(e.name).toBe("BadRequest");
-    }
+    await waitForRouteHandlerCompletion(index, req, saveRes);
+    expect(e.name).toBe("BadRequest");
   });
 });
