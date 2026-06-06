@@ -71,7 +71,7 @@ describe("testing logon, register, and logoff", () => {
 
   it("36. That string contains `HttpOnly;`", async () => {
     const setCookieArray = saveRes.get("Set-Cookie");
-    expect(setCookieArray[0]).toContain("HttpOnly;");
+    expect(setCookieArray[0]).toContain(`HttpOnly;`);
   });
 
   it("37. The returned data from the register has the expected name.", async () => {
@@ -113,13 +113,9 @@ describe("testing logon, register, and logoff", () => {
       method: "POST",
       body: { name: "Bob", email: "bob@sample.com", password: "Pa$$word20" },
     });
-
-    try {
-      saveRes = MockResponseWithCookies();
-      await waitForRouteHandlerCompletion(register, req, saveRes);
-    } catch (e) {
-      expect(e.name).toBe("BadRequest");
-    }
+  saveRes = MockResponseWithCookies();
+  await waitForRouteHandlerCompletion(register, req, saveRes);
+  expect(saveRes.statusCode).toBe(400);
   });
 });
 

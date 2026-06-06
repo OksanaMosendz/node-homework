@@ -41,7 +41,7 @@ afterAll(() => {
 });
 
 describe("testing task creation", () => {
-  it("14. Creates a task", async () => {
+  it("14. can't create a task without a user id", async () => {
     const req = httpMocks.createRequest({
       method: "POST",
       body: { title: "first task" },
@@ -51,8 +51,7 @@ describe("testing task creation", () => {
     try {
       await waitForRouteHandlerCompletion(create, req, saveRes);
     } catch (e) {
-      expect(e.name).toBe("TypeError");
-    }
+      expect(e.name).toBe("TypeError");}
   });
 
   it("15. can't create a task with a bogus user id", async () => {
@@ -102,8 +101,11 @@ describe("test getting created tasks", () => {
       method: "GET",
     });
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
-    await waitForRouteHandlerCompletion(index, req, saveRes);
-    expect(e.name).toBe("TypeError");
+    expect.assertions(1);
+    try{await waitForRouteHandlerCompletion(index, req, saveRes);}
+  catch (e) {
+  expect(e.name).toBe("TypeError");
+}
   });
 
   it("21. If you use user1's id on index() the call returns a 200 status.", async () => {
@@ -136,7 +138,7 @@ describe("test getting created tasks", () => {
     req.user = { id: user2.id };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
     await waitForRouteHandlerCompletion(index, req, saveRes);
-    expect(e.name).toBe("BadRequest");
+    expect(saveRes.statusCode).toBe(404);
   });
 
   it("26. You can retrieve the created task using show().", async () => {
@@ -158,7 +160,7 @@ describe("test getting created tasks", () => {
     req.params = { id: saveTaskId.toString() };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
     await waitForRouteHandlerCompletion(show, req, saveRes);
-    expect(e.name).toBe("BadRequest");
+    expect(saveRes.statusCode).toBe(404);
   });
 });
 
@@ -198,7 +200,7 @@ describe("test tasks update and delete", () => {
     req.params = { id: saveTaskId.toString() };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
     await waitForRouteHandlerCompletion(deleteTask, req, saveRes);
-    expect(e.name).toBe("BadRequest");
+    expect(saveRes.statusCode).toBe(404);
   });
 
   it("31. User1 can delete the task", async () => {
@@ -219,6 +221,6 @@ describe("test tasks update and delete", () => {
     req.user = { id: user1.id };
     saveRes = httpMocks.createResponse({ eventEmitter: EventEmitter });
     await waitForRouteHandlerCompletion(index, req, saveRes);
-    expect(e.name).toBe("BadRequest");
+    expect(saveRes.statusCode).toBe(404);
   });
 });

@@ -176,9 +176,7 @@ async function show(req, res) {
 }
 
 function logoff(req, res) {
-  console.log("logoff controller");
   res.clearCookie("jwt", cookieFlags(req));
-
   res.sendStatus(StatusCodes.OK);
 }
 

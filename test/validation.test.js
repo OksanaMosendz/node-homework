@@ -53,12 +53,12 @@ const { error } = userSchema.validate(
     ).toBeDefined();
   });
 
-    it("6. should accept valid name",()=>{
+    it("6. The name must be valid (3 to 30 characters).",()=>{
 const { error } = userSchema.validate(
       { name: "Bo", email: "bob@sample.com", password: "!1Password" },
       { abortEarly: false },
     );
-       expect(
+     expect(
       error.details.find((detail) => detail.context.key == "name"),
     ).toBeDefined();
   });
