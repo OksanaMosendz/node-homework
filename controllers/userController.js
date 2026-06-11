@@ -37,8 +37,9 @@ async function comparePassword(inputPassword, storedHash) {
   return crypto.timingSafeEqual(keyBuffer, derivedKey);
 }
 
-async function register(req, res, next) {
 
+
+async function register(req, res, next) {
   let isPerson = false;
   if (req.body.recaptchaToken) {
     const token = req.body.recaptchaToken;
@@ -167,6 +168,12 @@ async function logon(req, res) {
       .json({ message: "Authentication Failed" });
 }
 
+
+async function googleLogon (req,res,next){
+console.log(req.body)
+}
+
+
 async function show(req, res) {
   const userId = parseInt(req.params.id);
 
@@ -214,4 +221,4 @@ function logoff(req, res) {
   res.sendStatus(StatusCodes.OK);
 }
 
-module.exports = { register, logon, logoff, show };
+module.exports = { register, logon, logoff, show , googleLogon};
