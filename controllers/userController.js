@@ -6,7 +6,7 @@ const { userSchema } = require("../validation/userSchema");
 const prisma = require("../db/prisma");
 const { randomUUID } = require("crypto");
 const jwt = require("jsonwebtoken");
-const { OAuth2Client } = require("google-auth-library");
+const {OAuth2Client} = require('google-auth-library');
 
 
 const cookieFlags = (req) => {
@@ -172,7 +172,7 @@ async function logon(req, res) {
 
 
 async function googleLogon (req,res,next){
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client();
 const { tokens } = await googleClient.getToken(req.body.code);
 console.log(tokens);
 }
