@@ -176,9 +176,30 @@ async function googleLogon (req,res,next){
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET
 );
+console.log(req.body.code)
 
-const { tokens } = await googleClient.getToken(req.body.code);
-console.log(tokens);
+const { tokens } = await googleClient.getToken({code: req.body.code,
+  redirect_uri: "http://localhost:3001"
+});
+
+const ticket = await googleClient.verifyIdToken({
+  idToken: tokens.id_token,
+  audience: process.env.GOOGLE_CLIENT_ID,
+});
+
+const payload = ticket.getPayload();
+
+console.log(payload);
+
+const googUser={
+  name: payload.name,
+  email: payload.email,
+}
+
+const user = await prisma.user.findUnique({
+    where: { email:  payload.name, },
+    select: { id: true, name: true, email: true, isGoogleUser: true },
+  });
 }
 
 
