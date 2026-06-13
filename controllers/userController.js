@@ -191,16 +191,57 @@ const payload = ticket.getPayload();
 
 console.log(payload);
 
-const googUser={
-  name: payload.name,
-  email: payload.email,
+const user = await prisma.user.findUnique({
+    where: { email:  payload.email, },
+    select: { id: true, name: true, email: true},
+  });
+
+  if(!user){
+ const result = await prisma.$transaction(async (tx) => {
+  const hashedPassword= await hashPassword(randomUUID());
+      newUser = await tx.user.create({
+        data: { name: payload.name, email:payload.email, hashedPassword},
+        select: { id: true, name: true, email: true },
+      });
+
+ const welcomeTaskData = [
+        {
+          title: "Complete your profile",
+          userId: newUser.id,
+          priority: "medium",
+        },
+        { title: "Add your first task", userId: newUser.id, priority: "high" },
+        { title: "Explore the app", userId: newUser.id, priority: "low" },
+      ];
+      await tx.task.createMany({ data: welcomeTaskData });
+      const welcomeTasks = await tx.task.findMany({
+        where: {
+          userId: newUser.id,
+          title: { in: welcomeTaskData.map((t) => t.title) },
+        },
+        select: {
+          id: true,
+          title: true,
+          isCompleted: true,
+          userId: true,
+          priority: true,
+        },
+      });
+
+      return { user: newUser, welcomeTasks};
+    });
+
+      return res.status(StatusCodes.CREATED).json({
+      user: result.user,
+      csrfToken: setJwtCookie(req,res,result.user),
+      welcomeTasks: result.welcomeTasks,
+      transactionStatus: "success",
+    });
+  } else res.status(StatusCodes.OK).json({ email:payload.email, name:payload.name, csrfToken: setJwtCookie(req,res,user)});
+
 }
 
-const user = await prisma.user.findUnique({
-    where: { email:  payload.name, },
-    select: { id: true, name: true, email: true, isGoogleUser: true },
-  });
-}
+
 
 
 async function show(req, res) {
