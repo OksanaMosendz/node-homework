@@ -39,8 +39,6 @@ async function comparePassword(inputPassword, storedHash) {
   return crypto.timingSafeEqual(keyBuffer, derivedKey);
 }
 
-
-
 async function register(req, res, next) {
   let isPerson = false;
   if (req.body.recaptchaToken) {
@@ -85,6 +83,17 @@ async function register(req, res, next) {
       .json({ error: `${error.message}` });
   }
 
+  const user = await prisma.user.findUnique({
+    where: { email: value.email },
+    select: { authBy: true},
+  });
+
+  if(user&&user.authBy==="google"){ return res.status(400).json({
+    message: "The email was already registered. Use logon with Google."
+  })}else if(user){return res.status(400).json({
+    message: "The email was already registered. Use logon"
+  })};
+
   let newUser = null;
   value.hashedPassword = await hashPassword(value.password);
   delete value.password;
@@ -93,7 +102,7 @@ async function register(req, res, next) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       newUser = await tx.user.create({
-        data: { name, email, hashedPassword },
+        data: { name, email, hashedPassword},
         select: { id: true, name: true, email: true },
       });
 
@@ -147,14 +156,21 @@ async function logon(req, res) {
   const validEmail = req.body.email.trim().toLowerCase();
   const user = await prisma.user.findUnique({
     where: { email: validEmail },
-    select: { id: true, name: true, email: true, hashedPassword: true },
+    select: { id: true, name: true, email: true, hashedPassword: true, authBy: true},
   });
+
 
   if (!user) {
     return res
       .status(StatusCodes.UNAUTHORIZED)
       .json({ message: "Authentication Failed" });
   }
+  
+  if (user.authBy === "google") {
+  return res.status(400).json({
+    message: "This account was created with Google. Please sign in with Google."
+  });
+}
 
   const isPasswordCorrect = await comparePassword(
     req.body.password,
@@ -200,7 +216,7 @@ const user = await prisma.user.findUnique({
  const result = await prisma.$transaction(async (tx) => {
   const hashedPassword= await hashPassword(randomUUID());
       newUser = await tx.user.create({
-        data: { name: payload.name, email:payload.email, hashedPassword},
+        data: { name: payload.name, email:payload.email, authBy: 'google', hashedPassword},
         select: { id: true, name: true, email: true },
       });
 
@@ -240,9 +256,6 @@ const user = await prisma.user.findUnique({
   } else res.status(StatusCodes.OK).json({ email:payload.email, name:payload.name, csrfToken: setJwtCookie(req,res,user)});
 
 }
-
-
-
 
 async function show(req, res) {
   const userId = parseInt(req.params.id);
