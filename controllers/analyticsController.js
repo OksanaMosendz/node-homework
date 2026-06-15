@@ -47,17 +47,28 @@ async function getUserAnalytics(req, res) {
   });
 
   const oneWeekAgo = new Date();
-oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-
-  const weeklyProgress = await prisma.task.groupBy({
-    by: ["createdAt"],
+  const weeklyTasks = await prisma.task.findMany({
     where: {
       userId,
       createdAt: { gte: oneWeekAgo },
     },
-    _count: { id: true },
+    select: {
+      createdAt: true,
+    },
   });
+
+  const dateGroup = {};
+  for (const task of weeklyTasks) {
+    const date = task.createdAt.toISOString().split("T")[0];
+    dateGroup[date] = (dateGroup[date] || 0) + 1;
+  }
+
+  const weeklyProgress = Object.keys(dateGroup).map((date) => ({
+    date,
+    count: dateGroup[date],
+  }));
 
   return res
     .status(StatusCodes.OK)
@@ -125,7 +136,7 @@ async function searchTasks(req, res) {
       error: "Search query must be at least 2 characters long",
     });
   }
-  const limit = parseInt(req.query.limit)||20;
+  const limit = parseInt(req.query.limit) || 20;
 
   const searchPattern = `%${searchQuery}%`;
   const exactMatch = searchQuery;
