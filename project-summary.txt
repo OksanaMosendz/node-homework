@@ -1,3 +1,5 @@
+https://node-homework-qa6u.onrender.com
+
 Additional APIs added:
 
 1. Bulk Create Tasks
@@ -105,7 +107,7 @@ Google OAuth login:
 
 ----------------------------
 
-6. User Profile (Extra)
+6. User Profile
 
 Method: GET
 Path: /api/users/:id
@@ -124,13 +126,13 @@ Path: /api/tasks
 Authentication: JWT required
 
 Query Params:
-- find (required)
-- isCompleted (optional)
-- priority (optional)
-- min_date (optional)
-- max_date (optional)
-- page (optional)
-- limit (optional)
+- find 
+- isCompleted 
+- priority
+- min_date
+- max_date
+- page 
+- limit
 - sortBy (optional: title, priority, createdAt, id, isCompleted)
 - sortDirection (optional: asc | desc)
 
