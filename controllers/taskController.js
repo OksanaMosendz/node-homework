@@ -119,11 +119,10 @@ async function index(req, res) {
       .json({ error: `${error.message}` });
   }
 
-  const { page, limit } = value;
+  const { page, limit, find, isCompleted, priority, min_date, max_date } = value;
   const skip = (page - 1) * limit;
   const whereClause = { userId: req.user.id };
-  const { find, isCompleted, priority, min_date, max_date } = req.query;
-
+  
   if (find) {
     whereClause.title = {
       contains: find,
