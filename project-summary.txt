@@ -1,1 +1,149 @@
 https://node-homework-qa6u.onrender.com
+
+Additional APIs added:
+
+1. Bulk Create Tasks
+
+Method: POST
+Path: /api/tasks/bulk
+Authentication: JWT required (httpOnly cookie "jwt")
+
+Request Body:
+{
+  "tasks": [
+    {
+      "title": "Task 1",
+      "priority": "high",
+      "isCompleted": false
+    },
+    {
+      "title": "Task 2",
+      "priority": "medium",
+      "isCompleted": false
+    }
+  ]
+}
+
+Response:
+{
+  "message": "success!",
+  "tasksCreated": 2,
+  "totalRequested": 2
+}
+
+----------------------------
+
+2. User Analytics
+
+Method: GET
+Path: /api/analytics/users/:id
+Authentication: Not required. (Future improvement: role-based access control-admin).
+
+Path Params:
+- id (user id)
+
+Description:
+Returns task statistics, recent tasks, and weekly progress for a specific user.
+
+----------------------------
+
+3. Users With Statistics
+
+Method: GET
+Path: /api/analytics/users
+Authentication: Not required. (Future improvement: role-based access control-admin).
+
+Query Params:
+- page (optional)
+- limit (optional)
+
+Example:
+GET /api/analytics/users?page=1&limit=10
+
+Description:
+Returns paginated users with task counts and up to 5 incomplete tasks per user.
+
+----------------------------
+
+4. Task Search
+
+Method: GET
+Path: /api/analytics/tasks/search
+Authentication: Not required. (Future improvement: role-based access control-admin).
+
+Query Params:
+- q (required)
+- limit (optional, default 20)
+
+Example:
+GET /api/analytics/tasks/search?q=profile&limit=10
+
+Description:
+Searches tasks by task title or user name.
+Results are ranked by:
+- exact match first
+- starts-with second
+- partial match last
+
+----------------------------
+
+5. Google Authentication
+
+Method: POST
+Path: /api/users/googleLogon
+Authentication: Not required
+
+Request Body:
+{
+  "code": "google_oauth_authorization_code"
+}
+
+Description:
+Google OAuth login:
+- creates user if not exists
+- logs in existing user
+- creates starter tasks for new users
+- returns JWT cookie + CSRF token
+
+----------------------------
+
+6. User Profile
+
+Method: GET
+Path: /api/users/:id
+Authentication: JWT required
+
+Description:
+Returns user profile and last 5 incomplete tasks.
+Access is restricted to the authenticated user only.
+
+----------------------------
+
+7. Task Filtering, Sorting & Pagination (Extra)
+
+Method: GET
+Path: /api/tasks
+Authentication: JWT required
+
+Query Params:
+- find 
+- isCompleted 
+- priority
+- min_date
+- max_date
+- page 
+- limit
+- sortBy (optional: title, priority, createdAt, id, isCompleted)
+- sortDirection (optional: asc | desc)
+
+Example:
+GET /api/tasks?find=test&isCompleted=true&sortBy=createdAt&sortDirection=asc&page=1&limit=10
+
+Description:
+Supports filtering, sorting, and pagination of user tasks.
+
+
+
+
+
+

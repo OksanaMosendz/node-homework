@@ -13,6 +13,7 @@ model User {
   name           String   @db.VarChar(30)
   hashedPassword String   @db.VarChar(255) @map("hashed_password")
   createdAt     DateTime @default(now()) @db.Timestamp(6) @map("created_at")
+  authBy     String  @default("app") @db.VarChar(10)
   Task          Task[]
   @@map("users")
 }
